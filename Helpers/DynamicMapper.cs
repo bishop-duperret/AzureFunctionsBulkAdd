@@ -15,13 +15,16 @@ namespace AzureFunctionsBulkAdd.Helpers
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        public static dynamic ToDynamic(object value)
+        public static ExpandoObject ToDynamic(object value)
         {
             IDictionary<string, object> expando = new ExpandoObject(); //instiate list
 
-            foreach (PropertyDescriptor property in TypeDescriptor.GetProperties(value.GetType()))  //iterate over properties 
-                expando.Add(property.Name, property.GetValue(value));    // add property name and value to expando object
-
+            foreach (PropertyDescriptor property in TypeDescriptor.GetProperties(value.GetType()))
+            { //iterate over properties 
+                if ( property!=null && value !=null && property.GetValue(value)!=null)
+                expando.Add(property.Name, property.GetValue(value) );    // add property name and value to expando object
+                else expando.Add(property.Name,DBNull.Value);    // add property name and value to expando object
+            }
             return expando as ExpandoObject;  //return expando as dyhnamic
         }
 
@@ -34,10 +37,10 @@ namespace AzureFunctionsBulkAdd.Helpers
         /// </summary>
         /// <param name="objs"></param>
         /// <returns></returns>
-        public static List<dynamic> ToDynamics(List<object> objs)
+        public static List<ExpandoObject> ToDynamics(List<object> objs)
         {
             //instantiate list
-            List<dynamic> dynamicObjs = new List<dynamic>();
+            List<ExpandoObject> dynamicObjs = new List<ExpandoObject>();
 
 
             //iterate over input objs and convert to dynamic

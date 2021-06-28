@@ -21,7 +21,7 @@ namespace AzureFunctionsBulkAdd.Helpers
 
             // configuration manager is deprecated. Environment variable are now the reccomended approach
             string connectionString = System.Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING");
-       
+
             //instantiate connection
             SqlConnection myConnection = new SqlConnection(connectionString);
 
@@ -36,7 +36,7 @@ namespace AzureFunctionsBulkAdd.Helpers
 
 
 
-        public void SwapStagingAndDestination (SqlConnection conn)
+        public void SwapStagingAndDestination(SqlConnection conn)
         {
             // Swap live and staging
             /* Note: An extra table, DataTable_Old, is required to temporarily hold the data being replaced before it is moved into DataTable_Staging. The rename-based approach did not require this extra table. */
@@ -44,7 +44,7 @@ namespace AzureFunctionsBulkAdd.Helpers
             string firstTran = "BEGIN TRAN TRUNCATE TABLE #destinationTable;  ALTER TABLE #stagingTable SWITCH TO #destinationTable;  COMMIT";
 
             SqlCommand cmd2 = new SqlCommand(firstTran, conn);
-            
+
             cmd2.ExecuteNonQuery();
 
         }
@@ -81,28 +81,28 @@ namespace AzureFunctionsBulkAdd.Helpers
         /// </summary>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        public static string[] GetColumnName (string tableName)
+        public static string[] GetColumnName(string tableName)
         {
 
-          List<string> columnName = new List<string>();
+            List<string> columnName = new List<string>();
 
 
-          string columnNameQuery =  $"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'{tableName}'";
+            string columnNameQuery = $"SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = N'{tableName}'";
 
 
-            using (var connection =SQLHelper.GetSQLConnection())
+            using (var connection = SQLHelper.GetSQLConnection())
             {
-                SqlCommand command = new SqlCommand( columnNameQuery, connection);
+                SqlCommand command = new SqlCommand(columnNameQuery, connection);
 
-                if ( connection.State!=ConnectionState.Open)
-                connection.Open();
+                if (connection.State != ConnectionState.Open)
+                    connection.Open();
 
                 using (SqlDataReader reader = command.ExecuteReader())
                 {
 
                     while (reader.Read())
                     {
-                         columnName.Add( (string)reader[3]);
+                        columnName.Add((string)reader[3]);
                     }
 
                 }
@@ -113,7 +113,21 @@ namespace AzureFunctionsBulkAdd.Helpers
 
         }
 
- 
+        public static bool TableExists (string tableName)
+        {
+            bool exists = false;
+
+            using ( var sqlConnection = SQLHelper.GetSQLConnection()) { 
+
+            var checkTableIfExistsCommand = new SqlCommand("IF EXISTS (SELECT 1 FROM sysobjects WHERE name =  '" + tableName + "') SELECT 1 ELSE SELECT 0", sqlConnection);
+
+                exists = checkTableIfExistsCommand.ExecuteScalar().ToString().Equals("1");
+            }
+
+            return exists;
+
+
+        }
 
         /// <summary>
         /// 
@@ -126,22 +140,25 @@ namespace AzureFunctionsBulkAdd.Helpers
         /// <param name="table"></param>
         /// <param name="sqlConnection"></param>
 
-        public void CreateTable (string tableName, DataTable table, SqlConnection sqlConnection)
+        public void CreateTable(string tableName, DataTable table, SqlConnection sqlConnection)
         {
-          
-            var checkTableIfExistsCommand = new SqlCommand("IF EXISTS (SELECT 1 FROM sysobjects WHERE name =  '" + tableName + "') SELECT 1 ELSE SELECT 0", sqlConnection);
-          
-            var exists = checkTableIfExistsCommand.ExecuteScalar().ToString().Equals("1");
 
-            // if does not exist
-            if (!exists)
+            // check if connection is not open. If not open
+            if (sqlConnection.State != ConnectionState.Open) { sqlConnection.Open(); }
+            
+
+          
+            if ( TableExists(tableName))
             {
                 string createStatement = GetCreateTableDDL(tableName, table);
 
                 var createTableCommand = new SqlCommand(createStatement, sqlConnection);
-               
+
                 createTableCommand.ExecuteNonQuery();
+
             }
+               
+           
 
         }
 
