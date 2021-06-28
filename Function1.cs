@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using AzureFunctionsBulkAdd.Helpers;
+using System.Collections.Generic;
 
 namespace AzureFunctionsBulkAdd
 {
@@ -15,10 +16,10 @@ namespace AzureFunctionsBulkAdd
     {
         [FunctionName("Function1")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "put", "post", Route = null)] HttpRequest req,
             ILogger log)
         {
-            log.LogInformation("C# HTTP trigger function processed a request.");
+          
 
             string name = req.Query["name"];
 
@@ -26,12 +27,21 @@ namespace AzureFunctionsBulkAdd
             dynamic data = JsonConvert.DeserializeObject(requestBody);
             name = name ?? data?.name;
 
-            log.LogInformation( JsonConvert.SerializeObject(SQLHelper.GetColumnName("MerakiUpdates")));
 
+            string tableName = data.tableName;
+
+            List <dynamic>  list = data.list;
+
+           await BulkAddWorker.BulkCopy(list, tableName, Environment.GetEnvironmentVariable("SQL_CONNECTION_STRING"));
+
+
+             
 
             string responseMessage = "";
 
             return new OkObjectResult(responseMessage);
         }
+
+
     }
 }

@@ -155,7 +155,7 @@ namespace AzureFunctionsBulkAdd.Helpers
         /// <param name="table"></param>
         /// <returns></returns>
 
-        static string GetCreateTableDDL(string tableName, DataTable table)
+        public static string GetCreateTableDDL(string tableName, DataTable table)
         {
             var ddl = new StringBuilder();
             ddl.AppendLine($"create table [{tableName}] (");
@@ -176,7 +176,7 @@ namespace AzureFunctionsBulkAdd.Helpers
             //https://docs.microsoft.com/en-us/dotnet/framework/data/adonet/sql-server-data-type-mappings
             if (dataTableColunmType == typeof(string) || dataTableColunmType == typeof(String))
             {
-                return "nvarchar(50)";
+                return "nvarchar(250)";
             }
             else if (dataTableColunmType == typeof(int) || dataTableColunmType == typeof(Int64))
             {
